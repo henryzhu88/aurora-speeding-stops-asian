@@ -1,0 +1,61 @@
+---
+title: "aurora-speeding-stops-asian"
+author: "Henry Zhu"
+date: "April 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#downloaded necessary libraries needed for table-making(gt) and map-making(sf) as well as stylistic sources(gganimate and lubridate)
+library(tidyverse)
+library(sf)
+library(fs)
+library(gt)
+library(ggthemes)
+library(gganimate)
+library(lubridate)
+```
+#Question 5
+This map tracks the month-by-month changes in terms of the location and number of stops by Aurora police in which a speeding violation was issued. Only Asian/Pacific-Islander males are shown in this map, totaling 1,033 stops. Each change represents one accumulated month, starting from January to December between the 5-year span of 2012 to 2016.
+
+```{r, message=FALSE, include=TRUE, echo=FALSE}
+#the new dataset for Aurora is downloaded in rds format, transferred into the working directory, and read in rds format
+dataco <-read_rds("tr137st9964_co_aurora_2019_02_25.rds")
+
+#the shape file for the Aurora, CO map is downloaded in as a tgz and renamed in a shorter shapes.tgz format. 
+download.file(url = "https://stacks.stanford.edu/file/druid:tr137st9964/tr137st9964_co_aurora_shapefiles_2019_02_25.tgz", destfile = "shapes2.tgz", 
+              quiet = TRUE)
+#shape folder is opened so that we can extract only the needed shp file
+untar("shapes2.tgz")
+#shp file is read in using sf format and given a name
+shapes_data2 <- read_sf("co_aurora_shapefiles/Police_Districts.shp")
+#tgz and shape file data is not needed any more, so deleted from data set
+file_delete(c("shapes2.tgz", "co_aurora_shapefiles/"))
+
+#I was interested in exploring how speeding violations were represented graphically among Asian/Pacific-Islander males, using str_detect to locate all rows that included some sort of "speeding" mention. Filtering out the NA coordinate values and appropriate race and gender factors, I reduced the data set to manageable ~1000 outcome list that would register well in points on a map.
+speedingco <- dataco %>% 
+  select(lng,lat,violation,subject_race, subject_sex,date) %>%
+  filter(str_detect(violation, pattern = "Speeding")) %>% 
+  filter(lng!="NA", lat!="NA",subject_race=="asian/pacific islander", subject_sex =="male") %>%
+#in order to facilitate the dynamic portion of the map, I first have to specify the time change in my map, using date to do so from the lubridate package. This compiles the data based on month-by-month changes.
+  mutate(date=month(date))
+
+#This maps out my data points along the coordinate system using sf code
+speeding_locations <- st_as_sf(speedingco, 
+                               coords = c("lng", "lat"), 
+                               crs = 4326) 
+#this finalizes the mapping system using the theme_map and provides appropriate titles and captions. The shape data was derived from the shp file.
+ggplot(data = shapes_data2) +
+  geom_sf() +
+  geom_sf(data = speeding_locations) +
+  theme_map() + 
+  labs(title = "Location of Speeding Stops in Aurora,CO",
+       subtitle = "Asian/Pacific-Islander Males 2012 -- 2016", 
+       caption = "Source: Stanford Open Policing Project") +
+#in order to trigger the animated/dynamic system, I used transition to map through the months in my map.
+  transition_manual(date)
+```
+
+
+
