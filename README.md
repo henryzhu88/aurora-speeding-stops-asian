@@ -1,1 +1,2 @@
 # aurora-speeding-stops-asian
+This map tracks the month-by-month changes in terms of the location and number of stops by Aurora police in which a speeding violation was issued. Only Asian/Pacific-Islander males are shown in this map, totaling 1,033 stops. Each change represents one accumulated month, starting from January to December between the 5-year span of 2012 to 2016.
